@@ -14,6 +14,7 @@ public class ServerMain {
 	
 	private static MainFrame mainFrame;
 	private static MonteCarloService monteCarloService;
+	private static MonteCarloFrame monteCarloFrame;
 	private static boolean serverIsRunning = false;
 	
 	public static ServerSocket serverSocket = null;
@@ -51,6 +52,8 @@ public class ServerMain {
 		    	
 		    }
 		});
+		
+		monteCarloFrame = new MonteCarloFrame();
 	}
 	
 	private static void createMonteCarloService() {

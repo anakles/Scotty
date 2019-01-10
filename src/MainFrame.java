@@ -2,13 +2,10 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridLayout;
-import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.image.renderable.RenderableImage;
 import java.io.IOException;
 import java.util.ArrayList;
-
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -20,7 +17,6 @@ import javax.swing.SwingConstants;
 
 public class MainFrame extends JFrame {
 	private static MainFrame mainFrame;
-	
 	private static JTextField txt_port;
 	private static JButton btn_startServer;
 	private static JPanel commandListPanel;
