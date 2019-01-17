@@ -2,6 +2,8 @@ import java.util.ArrayList;
 
 public class MonteCarloService {	
 	
+	private static final int NUMBER_OF_PARTICLES = 1000;
+	
 	public static final String FORWARD = "vor";
 	public static final String BACKWARD = "zurueck";
 	public static final String ROTATE_RIGHT = "rechts";
@@ -36,5 +38,18 @@ public class MonteCarloService {
 	
 	public void clearCommands() {
 		commands.clear();
+	}
+	
+	
+	private void initParticles() {
+		
+		
+		
+	}
+	
+	private void calculateBelieve() {
+		
+		
+		
 	}
 }
