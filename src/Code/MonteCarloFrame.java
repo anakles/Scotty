@@ -105,7 +105,7 @@ public class MonteCarloFrame extends JFrame {
 		public int x1 = -1, x2 = -1, y1 = -1, y2 = -1;
 		
 		//Please choose a even number:
-		private int particleRadius = 10;
+		private int particleRadius = 4;
 		
 		public DrawPanel(){		}
 		
@@ -135,10 +135,21 @@ public class MonteCarloFrame extends JFrame {
 			
 			//Draw Particles
 			for(Particle p : particles) {
-				g.setColor(Color.RED);
+				if(p.weight > 0.8) {
+					g.setColor(Color.GREEN);
+				}
+				else if(p.weight > 0.5) {
+					g.setColor(Color.ORANGE);
+				}
+				else {
+					g.setColor(Color.GRAY);
+				}			
+				
 				g.drawOval(p.x - (int)particleRadius/2, p.y - (int)particleRadius/2, particleRadius, particleRadius);
 				g.fillOval(p.x - (int)particleRadius/2, p.y - (int)particleRadius/2, particleRadius, particleRadius);
 				
+				
+			
 				//draw orientation of particle:
 				int startX = p.x;
 				int startY = p.y;
@@ -173,14 +184,20 @@ public class MonteCarloFrame extends JFrame {
 				
 				}
 				
-				
+
 				g.drawLine(startX, startY, endX, endY);
+
 			}
 			
-			
-			//draw Bot Current position
-			
-			
+			//Drawing a possible position
+			/*g.setColor(Color.GREEN);
+			g.drawOval(300 - (int)particleRadius/2, 75 - (int)particleRadius/2, particleRadius, particleRadius);
+			g.fillOval(300 - (int)particleRadius/2, 75 - (int)particleRadius/2, particleRadius, particleRadius);
+			int startX = 300;
+			int startY = 75;
+			int endX = startX + 10;
+			int endY = startY;
+			g.drawLine(startX, startY, endX, endY);*/
 		}
 		
 		public void setInnerSquare(int x1, int y1, int x2, int y2) {
@@ -227,10 +244,11 @@ public class MonteCarloFrame extends JFrame {
 			y2 = candidates.get(1);
 		}
 		
+		System.out.println("-------------------------------------------------------");
 		System.out.println("I've found "+candidates.size()+" candidates!");
 		System.out.println("The inner square is from ("+x1+"|"+y1+") -> ("+x2+"|"+y2+")");
 		
-		panel.setInnerSquare(x1, y1, x2, y2);
+		panel.setInnerSquare(x1+10, y1+20, x2-20, y2-20);
 	
 }
 

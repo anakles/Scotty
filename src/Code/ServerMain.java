@@ -9,6 +9,8 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
+
 import Utils.*;
 import javax.swing.UIManager;
 
@@ -154,44 +156,111 @@ public class ServerMain {
 	        		sendMessage(singleCommand, out);
 	        		
 	        		if(singleCommand.equals("sensor_0")) {
-	        			String response = readMessage(in);
-	        			System.out.println("SENSORS: "+response);
+	        			for(int i = 0; i < 3; i++) {
+	        				String response = readMessage(in);
+		        			System.out.println("SENSORS: "+response);
+		        			double[] sensorValues = trimSensorValues(response);
+		        			System.out.println(Arrays.toString(sensorValues));
+		        			
+		        			//calculate new weights...
+		        			monteCarloService.monteCarlo(String.valueOf(sensorValues[0]));
+		        			monteCarloFrame.panel.repaint();
+		        			monteCarloFrame.panel.revalidate();
+		        			
+		        			//Thread.sleep(500);
+		       
+		        			
+		        			
+	        			}
+	        			
+	        			
 	        		}
 	        		
 	        		String response = readMessage(in);
-	        		if(response.equals("DONE")) {
-	        			System.out.println("Client has finally something right: "+singleCommand);
-	        			commands.remove(0);
+	        		
+		       		if(response.equals("DONE")) {
+		       			System.out.println("Client has finally something right: "+singleCommand);
+		       			commands.remove(0);
 	        			MainFrame.redrawCommands();
-	        		}
-	        		else if(response.equals("CLOSE")) {
-	        			System.out.println("Client "+clientSocket.getInetAddress()+" is disconnecting...");
-	        			
-	        			commands.remove(0);
-	        			MainFrame.redrawCommands();
-	        			
-	        			try {
-	    					serverSocket.close();
-	    					clientSocket.close();
-	    					System.out.println(">>> Server was shut down! <<<");
-	    				} catch (Exception e) {
-	    					// TODO: handle exception
-	    				}
-	        			break;
-	        		}
-	        		else {
-	        			System.out.println("Client f+cked up again! "+response);
-	        			sendMessage(singleCommand, out);
-	        		}
+		       		}
+		        		/*else if (response.contains("."))
+		        		{
+		        			monteCarloService.monteCarlo(response);	        		
+		        		}
+		        		else if (response.equals("Infinity"))
+		        		{
+		        			//TODO: von der Straße abgekommen
+		        		}
+		        		*/
+		        	else if(response.equals("CLOSE")) {
+		        		System.out.println("Client "+clientSocket.getInetAddress()+" is disconnecting...");
+		        			
+		        		commands.remove(0);
+		        		MainFrame.redrawCommands();
+		        			
+		        		try {
+		    				serverSocket.close();
+		    				clientSocket.close();
+		    				System.out.println(">>> Server was shut down! <<<");
+		    			} catch (Exception e) {
+		    				// TODO: handle exception
+		    			}
+		        		break;
+		        	}
+		        	else {
+		        		System.out.println("Client f+cked up again! "+response);
+		        		sendMessage(singleCommand, out);
+		        	}
+		        		
+		        		
 	        	}
-			}
+	        }
 			catch (Exception e) {
-				//e.printStackTrace();
+				e.printStackTrace();
 				System.out.println(">>> Server lost connection to client! <<<");       	
 			}
 		}	
 		else {
 			System.out.println(">>> Start server before running commands <<<");
 		}
+	}
+	
+	/* String sonic = "Dist: "+sampleSonic[0];
+	 * String colorId = "Color ID: "+sampleColor[0];
+	 * writeMsg(server, "" + sonic +" | ColorID: "+colorId);*/
+	private static double[] trimSensorValues(String sensorString) {
+		double[] sensorValues = new double[2];
+		int indexOfCut = 0;
+		
+		for(int i = 0; i < sensorString.length(); i++) {
+			if(sensorString.charAt(i) == '|')
+				indexOfCut = i;
+		}
+		
+		String valSonic = sensorString.substring(0, indexOfCut);
+		String valColor = sensorString.substring(indexOfCut+1);
+		
+		//System.out.println(valSonic);
+		//System.out.println(valColor);
+		
+		for(int i = 0; i < valSonic.length(); i++) {
+			if(valSonic.charAt(i) == ':')
+				valSonic = valSonic.substring(i+1);
+		}
+		
+		System.out.println("ValSonic: "+valSonic);
+		
+		for(int i = 0; i < valColor.length(); i++) {
+			if(valColor.charAt(i) == ':')
+				valColor = valColor.substring(i+1);
+		}
+		
+		//System.out.println("ValColor: "+valColor);
+		
+		sensorValues[0] = (valSonic.equals("Infinity")) ? Double.POSITIVE_INFINITY:Double.valueOf(valSonic);
+		sensorValues[1] = Double.valueOf(valColor);
+		
+		
+		return sensorValues;
 	}
 }
