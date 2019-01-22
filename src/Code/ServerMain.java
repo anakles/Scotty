@@ -24,6 +24,8 @@ public class ServerMain {
 	public static ServerSocket serverSocket = null;
 	public static Socket clientSocket = null;
 	
+	public static ArrayList<BotMove> moveHistory = new ArrayList<>();
+	
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -161,9 +163,9 @@ public class ServerMain {
 		        			System.out.println("SENSORS: "+response);
 		        			double[] sensorValues = trimSensorValues(response);
 		        			System.out.println(Arrays.toString(sensorValues));
-		        			
-		        			//calculate new weights...
-		        			monteCarloService.monteCarlo(String.valueOf(sensorValues[0]));
+
+		        			//TODO: Add the last action as "Movement"
+		        			monteCarloService.monteCarlo(String.valueOf(sensorValues[0]), 25);
 		        			monteCarloFrame.panel.repaint();
 		        			monteCarloFrame.panel.revalidate();
 		        			
@@ -180,6 +182,7 @@ public class ServerMain {
 	        		
 		       		if(response.equals("DONE")) {
 		       			System.out.println("Client has finally something right: "+singleCommand);
+		       			moveHistory.add(trimCommands(singleCommand));
 		       			commands.remove(0);
 	        			MainFrame.redrawCommands();
 		       		}
@@ -262,5 +265,22 @@ public class ServerMain {
 		
 		
 		return sensorValues;
+	}
+	
+	
+	private static BotMove trimCommands(String command) {
+		BotMove move = null;
+		
+		
+		for (int i = 0; i < command.length(); i++)
+    	{
+    		if(command.charAt(i) == '_')
+    		{
+    			String cmd = command.substring(0, i);
+    			String value = command.substring(i+1);
+    			move = new BotMove(cmd, Double.valueOf(value));
+    		}
+    	}
+		return move;
 	}
 }

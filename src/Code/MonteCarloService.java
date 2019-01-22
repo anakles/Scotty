@@ -136,13 +136,17 @@ public class MonteCarloService {
 	
 	
 	
-	
-	public void monteCarlo(String distance)
+	/**Distance is the value of the sonic sensor, movement the distance the bot moved in the last action  */
+	public void monteCarlo(String distance, double movement)
 	{
 		//TODO: set to 0 later again
-		double movement = 25;
 		double[] probs = new double[NUMBER_OF_PARTICLES];
 		int rotation = 90;
+		
+		
+		//TODO: Check if still on street:
+		//If not, move bot until we find it.
+		
 		
 		for (int i = 0; i < particles.size(); i++) 
 		{
