@@ -16,6 +16,7 @@ public class MonteCarloService {
 	public static final String ROTATE_RIGHT = "rechts";
 	public static final String ROTATE_LEFT = "links";
 	public static final String SENSORS = "sensor";
+	public static final String GIVE_SENSORS = "sensor_0";
 	public static final String END = "end";
 //	MonteCarloFrame monteCarloFrame = new MonteCarloFrame();
 	
@@ -41,6 +42,48 @@ public class MonteCarloService {
 		commands.add("links_180");
 		commands.add("sensor_0");
 		//commands.add("end_0");
+		
+	}
+	
+	public void findStreetCommands() throws NullPointerException{
+		BotMove lastMove = ServerMain.moveHistory.get(ServerMain.moveHistory.size()-1);
+		SensorValue lastFront = null;
+		
+		//Filter
+		for(int i = ServerMain.sensorHistory.size()-1; i > 0; i--) {
+			if(ServerMain.sensorHistory.get(i).getMesuredDirection().equals(SensorValue.DIR_FRONT)) {
+				lastFront = ServerMain.sensorHistory.get(i);
+				continue;
+			}	
+		}
+		
+		//Case: We reached the end of the street
+		if(lastFront.getSonicValue() < 0.4) {
+			commands.clear();
+			commands.add(BACKWARD+"_"+lastMove.getValue());
+			commands.add(ROTATE_RIGHT+"_"+"180");
+			commands.add(GIVE_SENSORS);
+			
+			
+		}
+		//Case: Scotty the schrotty botty did not drive straight
+		else {
+			/* Redo last move (drive backward)
+			 * 2° right + drive 10 cm
+			 * sensors
+			 * Redo last move
+			 * 4° left + drive 10 cm
+			 * sensors
+			 * if still not on street, ERROR?!
+			 */
+			
+			
+			
+			
+			
+			
+		}
+		
 		
 	}
 	
@@ -137,15 +180,46 @@ public class MonteCarloService {
 	
 	
 	/**Distance is the value of the sonic sensor, movement the distance the bot moved in the last action  */
-	public void monteCarlo(String distance, double movement)
+	public void monteCarlo()
 	{
 		//TODO: set to 0 later again
+		BotMove latestMove = ServerMain.moveHistory.get(ServerMain.moveHistory.size()-1);
+		SensorValue latestSensor = ServerMain.sensorHistory.get(ServerMain.sensorHistory.size()-1);
+		
 		double[] probs = new double[NUMBER_OF_PARTICLES];
-		int rotation = 90;
+		double streetColorId = 7.0;
+		boolean onStreet = true;
+		
+		//Are we still on the street?
+		if(!(latestSensor.getColorValue() == streetColorId)) {
+			onStreet = false;
+			
+			while(!onStreet) {
+				
+				
+			}
+		}
+			
+		
+		//times 90° rotation
+		int rotationTimes = 0;
+		if(latestMove.getDirection().equals(MonteCarloService.ROTATE_LEFT)){
+			rotationTimes = (int) ((0 - (latestMove.getValue() / 90)) * -1);
+		}
+		else if(latestMove.getDirection().equals(MonteCarloService.ROTATE_RIGHT)) {
+			rotationTimes = (int) ( latestMove.getValue() / 90);		
+		}
 		
 		
 		//TODO: Check if still on street:
 		//If not, move bot until we find it.
+		
+		
+		
+		
+		
+		
+		
 		
 		
 		for (int i = 0; i < particles.size(); i++) 
@@ -153,8 +227,8 @@ public class MonteCarloService {
 			Particle currParticle = particles.get(i);
 			
 			double prob = currParticle.weight;
-//			particles.get(i).setRotation(rotation); 
-			particles.get(i).x += movement; //TODO: Fill with actual robot movement
+			particles.get(i).changeRotation(rotationTimes); 
+			particles.get(i).x += latestMove.getValue(); //TODO: Fill with actual robot movement
 //			particles.get(i).y += 1; //TODO: anpassen to relativ Y-position of the robot (+someting or -something)
 
 			

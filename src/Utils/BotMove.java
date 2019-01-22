@@ -14,15 +14,11 @@ public class BotMove {
 		return direction;
 	}
 
-	public void setDirection(String direction) {
-		this.direction = direction;
-	}
-
 	public double getValue() {
 		return value;
 	}
-
-	public void setValue(double value) {
-		this.value = value;
+	
+	public String toString() {
+		return "BotMove[Direction: "+direction+" | Value: "+value+"]";
 	}
 }

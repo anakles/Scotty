@@ -25,6 +25,7 @@ public class ServerMain {
 	public static Socket clientSocket = null;
 	
 	public static ArrayList<BotMove> moveHistory = new ArrayList<>();
+	public static ArrayList<SensorValue> sensorHistory = new ArrayList<>();
 	
 
 	public static void main(String[] args) {
@@ -161,11 +162,11 @@ public class ServerMain {
 	        			for(int i = 0; i < 3; i++) {
 	        				String response = readMessage(in);
 		        			System.out.println("SENSORS: "+response);
-		        			double[] sensorValues = trimSensorValues(response);
-		        			System.out.println(Arrays.toString(sensorValues));
+		        			SensorValue sensorValue = trimSensorValues(response);
+		        			System.out.println(sensorValue.toString());
 
 		        			//TODO: Add the last action as "Movement"
-		        			monteCarloService.monteCarlo(String.valueOf(sensorValues[0]), 25);
+		        			monteCarloService.monteCarlo();
 		        			monteCarloFrame.panel.repaint();
 		        			monteCarloFrame.panel.revalidate();
 		        			
@@ -182,7 +183,10 @@ public class ServerMain {
 	        		
 		       		if(response.equals("DONE")) {
 		       			System.out.println("Client has finally something right: "+singleCommand);
-		       			moveHistory.add(trimCommands(singleCommand));
+		       			//Adding command to history
+		       			if(!singleCommand.equals("sensor_0"))
+		       				moveHistory.add(trimCommands(singleCommand));
+		       			
 		       			commands.remove(0);
 	        			MainFrame.redrawCommands();
 		       		}
@@ -231,8 +235,7 @@ public class ServerMain {
 	/* String sonic = "Dist: "+sampleSonic[0];
 	 * String colorId = "Color ID: "+sampleColor[0];
 	 * writeMsg(server, "" + sonic +" | ColorID: "+colorId);*/
-	private static double[] trimSensorValues(String sensorString) {
-		double[] sensorValues = new double[2];
+	private static SensorValue trimSensorValues(String sensorString) {
 		int indexOfCut = 0;
 		
 		for(int i = 0; i < sensorString.length(); i++) {
@@ -260,11 +263,29 @@ public class ServerMain {
 		
 		//System.out.println("ValColor: "+valColor);
 		
-		sensorValues[0] = (valSonic.equals("Infinity")) ? Double.POSITIVE_INFINITY:Double.valueOf(valSonic);
-		sensorValues[1] = Double.valueOf(valColor);
+		double sonic = (valSonic.equals("Infinity")) ? Double.POSITIVE_INFINITY:Double.valueOf(valSonic);
+		double color = Double.valueOf(valColor);
 		
+		String direction = "";
+		if(sensorHistory.isEmpty()) direction = SensorValue.DIR_RIGHT;
+		else {
+			switch((sensorHistory.get(sensorHistory.size()-1).getMesuredDirection())) {
+			
+				case SensorValue.DIR_RIGHT:
+					direction = SensorValue.DIR_LEFT;
+					break;
+					
+				case SensorValue.DIR_LEFT:
+					direction = SensorValue.DIR_FRONT;
+					break;
+					
+				case SensorValue.DIR_FRONT:
+					direction = SensorValue.DIR_RIGHT;
+					break;
+			}
+		}
 		
-		return sensorValues;
+		return new SensorValue(sonic, color, direction);
 	}
 	
 	
