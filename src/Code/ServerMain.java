@@ -142,6 +142,14 @@ public class ServerMain {
 		}
 	}
 	
+	public static void startMonteCarlo() {
+		//TODO: Replace function calls
+		monteCarloService.monteCarlo();
+		
+		monteCarloFrame.panel.repaint();
+		monteCarloFrame.panel.revalidate();
+	}
+	
 	public static void runCommandsOnClient() throws IOException{
 		if(serverIsRunning) {
 			
@@ -163,20 +171,11 @@ public class ServerMain {
 	        				String response = readMessage(in);
 		        			System.out.println("SENSORS: "+response);
 		        			SensorValue sensorValue = trimSensorValues(response);
+		        			ServerMain.sensorHistory.add(sensorValue);
+		        			ServerMain.moveHistory.add(new BotMove(MonteCarloService.FORWARD, 0));
 		        			System.out.println(sensorValue.toString());
-
-		        			//TODO: Add the last action as "Movement"
-		        			monteCarloService.monteCarlo();
-		        			monteCarloFrame.panel.repaint();
-		        			monteCarloFrame.panel.revalidate();
-		        			
-		        			//Thread.sleep(500);
-		       
-		        			
 		        			
 	        			}
-	        			
-	        			
 	        		}
 	        		
 	        		String response = readMessage(in);

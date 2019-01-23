@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.awt.Graphics;
+import java.io.IOException;
 
 import Utils.*;
 
@@ -18,10 +19,14 @@ public class MonteCarloService {
 	public static final String SENSORS = "sensor";
 	public static final String GIVE_SENSORS = "sensor_0";
 	public static final String END = "end";
+	
+	public static final double STREET_COLOR_ID = 2.0;
 //	MonteCarloFrame monteCarloFrame = new MonteCarloFrame();
 	
 	double bestProb = 0;
 	double bestDist = 0;
+	
+	boolean onStreet = false;
 	
 	private static ArrayList<String> commands = new ArrayList<>();
 	private static ArrayList<Particle> particles = new ArrayList<>();
@@ -45,15 +50,24 @@ public class MonteCarloService {
 		
 	}
 	
+	/**Checks the last sensor values if the bot is currently on the street */
+	private static boolean isOnStreet(ArrayList<SensorValue> sensorHistory) {
+		if(sensorHistory.get(sensorHistory.size()-1).getColorValue() == STREET_COLOR_ID)
+			return true;
+		else 
+			return false;
+	}
+	
 	public void findStreetCommands() throws NullPointerException{
 		BotMove lastMove = ServerMain.moveHistory.get(ServerMain.moveHistory.size()-1);
+		BotMove lastForwardMove = null;
 		SensorValue lastFront = null;
 		
 		//Filter
 		for(int i = ServerMain.sensorHistory.size()-1; i > 0; i--) {
 			if(ServerMain.sensorHistory.get(i).getMesuredDirection().equals(SensorValue.DIR_FRONT)) {
 				lastFront = ServerMain.sensorHistory.get(i);
-				continue;
+				break;
 			}	
 		}
 		
@@ -64,27 +78,97 @@ public class MonteCarloService {
 			commands.add(ROTATE_RIGHT+"_"+"180");
 			commands.add(GIVE_SENSORS);
 			
-			
 		}
 		//Case: Scotty the schrotty botty did not drive straight
 		else {
 			/* Redo last move (drive backward)
-			 * 2° right + drive 10 cm
+			 * 10° right + drive 10 cm
 			 * sensors
 			 * Redo last move
-			 * 4° left + drive 10 cm
+			 * 20° left + drive 10 cm
 			 * sensors
 			 * if still not on street, ERROR?!
 			 */
+			//SensorValue tempSensor = ServerMain.sensorHistory.get(ServerMain.sensorHistory.size()-1);
+			
+			//redo last forward move:
+			if(lastMove.getDirection().equals(FORWARD)) {
+				lastForwardMove = lastMove;
+				addCommand(BACKWARD+"_"+lastMove.getValue());
+			}
+			else {
+				for(int i = ServerMain.moveHistory.size()-1; i > 0; i--) {
+					if(ServerMain.moveHistory.get(i).getDirection().equals(FORWARD)) {
+						lastForwardMove = ServerMain.moveHistory.get(i);
+						addCommand(BACKWARD+"_"+lastForwardMove.getValue());
+						break;
+					}
+				}
+			}
+			//addCommand(GIVE_SENSORS);
 			
 			
+			try {
+				ServerMain.runCommandsOnClient();
+				Thread.sleep(500);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return;
+			}
+	
+			commands.add(ROTATE_RIGHT+"_"+(10));
+			commands.add(FORWARD+"_"+100);
+			commands.add(GIVE_SENSORS);
+				
+			try {
+				ServerMain.runCommandsOnClient();
+				Thread.sleep(500);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return;
+			}
+				
+			if(isOnStreet(ServerMain.sensorHistory)) {
+				System.out.println("Scotty found the street again \\(*o*)/");
+				onStreet = true;
+				return;
+			}
+				
+			commands.add(BACKWARD+"_"+100);
+			commands.add(ROTATE_LEFT+"_"+(20));
+			commands.add(FORWARD+"_"+100);
+			commands.add(GIVE_SENSORS);
+				
+			try {
+				ServerMain.runCommandsOnClient();
+				Thread.sleep(500);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return;
+			}
+				
+			if(isOnStreet(ServerMain.sensorHistory)) {
+				System.out.println("Scotty found the street again \\(*o*)/");
+				onStreet = true;
+				return;
+			}
+				
+			commands.add(BACKWARD+"_"+100);
+			commands.add(ROTATE_RIGHT+"_"+(10));
+
+			try {
+				ServerMain.runCommandsOnClient();
+				Thread.sleep(500);
+			} catch (Exception e) {
+				e.printStackTrace();
+				return;
+			}
 			
-			
-			
-			
+			return;
 		}
-		
-		
 	}
 	
 	public void addCommand(String cmd) {
@@ -170,6 +254,7 @@ public class MonteCarloService {
 			if (old_particles.get(i).weight > bestProb) 
 			{
 				bestProb = old_particles.get(i).weight;
+				MonteCarloFrame.panel.currentBest = old_particles.get(i);
 			}
 
 		}
@@ -182,21 +267,42 @@ public class MonteCarloService {
 	/**Distance is the value of the sonic sensor, movement the distance the bot moved in the last action  */
 	public void monteCarlo()
 	{
-		//TODO: set to 0 later again
-		BotMove latestMove = ServerMain.moveHistory.get(ServerMain.moveHistory.size()-1);
-		SensorValue latestSensor = ServerMain.sensorHistory.get(ServerMain.sensorHistory.size()-1);
+		BotMove latestMove, lastNotNull = null;
+		SensorValue latestSensor;
+		
+		if(!isOnStreet(ServerMain.sensorHistory)) {
+			System.out.println("ERROR >>> The bot was placed off the road");
+			return;
+		}
+		onStreet = true;
+		
+		latestMove = ServerMain.moveHistory.get(ServerMain.moveHistory.size()-1);
+		latestSensor = ServerMain.sensorHistory.get(ServerMain.sensorHistory.size()-1);
+		
+		if(latestMove.getDirection().equals(FORWARD) && latestMove.getValue() == 0){
+			addCommand(FORWARD+"_"+100);
+			try {
+				ServerMain.runCommandsOnClient();
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+				return;
+			}
+		}
 		
 		double[] probs = new double[NUMBER_OF_PARTICLES];
-		double streetColorId = 7.0;
-		boolean onStreet = true;
+		
 		
 		//Are we still on the street?
-		if(!(latestSensor.getColorValue() == streetColorId)) {
+		if(!isOnStreet(ServerMain.sensorHistory)) {	
 			onStreet = false;
 			
 			while(!onStreet) {
-				
-				
+				System.out.println("~~~~~   ? ~~~~~");
+				System.out.println("~~~~~ O=O ~~~~~");
+				System.out.println("~~~~~ [ ] ~~~~~");
+				System.out.println("~~~~~ . . ~~~~~");
+				findStreetCommands();
 			}
 		}
 			
@@ -210,31 +316,42 @@ public class MonteCarloService {
 			rotationTimes = (int) ( latestMove.getValue() / 90);		
 		}
 		
-		
-		//TODO: Check if still on street:
-		//If not, move bot until we find it.
-		
-		
-		
-		
-		
-		
-		
-		
+		for(int i = ServerMain.moveHistory.size()-1; i > 0; i--) {
+			BotMove temp = ServerMain.moveHistory.get(i);
+			if(temp.getDirection().equals(FORWARD) && temp.getValue() > 0) {
+				lastNotNull = temp;
+				break;
+			}
+		}
 		
 		for (int i = 0; i < particles.size(); i++) 
 		{
 			Particle currParticle = particles.get(i);
-			
+		
 			double prob = currParticle.weight;
 			particles.get(i).changeRotation(rotationTimes); 
-			particles.get(i).x += latestMove.getValue(); //TODO: Fill with actual robot movement
+			
+			switch(currParticle.rotation) {
+				case 0:
+					break;
+					
+				case 90:
+					particles.get(i).x += (lastNotNull != null) ? (lastNotNull.getValue()/10):(latestMove.getValue()/10); //TODO: Fill with actual robot movement
+					break;
+					
+				case 180:
+					break;
+					
+				case 270:
+					particles.get(i).x -= (lastNotNull != null) ? (lastNotNull.getValue()/10):(latestMove.getValue()/10);
+					break;
+			}
+			
 //			particles.get(i).y += 1; //TODO: anpassen to relativ Y-position of the robot (+someting or -something)
 
 			
 			//check if particles are out of bounds
-			if (particles.get(i).x >= 580 || particles.get(i).x <= 10)
-			{
+			if (particles.get(i).x >= 580 || particles.get(i).x <= 10){
 				int temp_x;
 				int temp_y;				
 				do {
@@ -252,11 +369,52 @@ public class MonteCarloService {
 				
 				particles.set(i, p);
 			}
-			
-			
-			//TODO: Gewichtungsfunktion der Partikel
 
-			prob = Math.random();
+			//Gewichtungsfunktion der Partikel
+			double diff = 0;
+
+			
+			//Particle-Direction right; Looking left
+			if (latestSensor.getMesuredDirection().equals(SensorValue.DIR_LEFT) && particles.get(i).rotation == 90){
+				for (MapLine line : MonteCarloFrame.panel.lines){
+					if (particles.get(i).y >= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2){
+						diff = 1 - Math.abs(((particles.get(i).y - line.y1) - ( 100 * latestSensor.getSonicValue())));
+					}					
+				}
+			}
+				
+			
+			//Particle-Direction right; Looking right
+			else if (latestSensor.getMesuredDirection().equals(SensorValue.DIR_RIGHT) && particles.get(i).rotation == 90){
+				for (MapLine line : MonteCarloFrame.panel.lines){
+					if (particles.get(i).y <= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2){
+						diff = 1 - Math.abs(((line.y1 - particles.get(i).y) - ( 100 * latestSensor.getSonicValue())));
+					}					
+				}
+			}
+			
+			
+			//Particle-Direction left; Looking left
+			else if (latestSensor.getMesuredDirection().equals(SensorValue.DIR_LEFT) && particles.get(i).rotation == 270){
+				for (MapLine line : MonteCarloFrame.panel.lines){
+					if (particles.get(i).y <= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2){
+						diff = 1 - Math.abs(((line.y1 - particles.get(i).y) - ( 100 * latestSensor.getSonicValue())));
+					}					
+				}
+			}
+			
+			
+			//Particle-Direction left; Looking right
+			else if (latestSensor.getMesuredDirection().equals(SensorValue.DIR_RIGHT) && particles.get(i).rotation == 270){
+				for (MapLine line : MonteCarloFrame.panel.lines){
+					if (particles.get(i).y >= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2)	{
+						diff = 1 - Math.abs(((particles.get(i).y - line.y1) - ( 100 * latestSensor.getSonicValue())));
+					}					
+				}
+			}
+			
+			
+			prob = diff;
 
 			probs[i] = prob;
 		}
@@ -269,6 +427,8 @@ public class MonteCarloService {
 		}
 	
 		particles = calculateBelieve(particles);
+		for(Particle p : particles)
+			System.out.println(p.toString());
 		
 		MonteCarloFrame.panel.particles = particles;
 		MonteCarloFrame.panel.repaint(); //TODO: test, if this repaint()-method is the right one

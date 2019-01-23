@@ -44,6 +44,10 @@ public class Particle {
 		}
 	}
 	
+	public String toString() {
+		return "Particle[X:"+x+" Y:"+y+" -> Weighted: "+weight+"]";
+	}
+	
 }
 
 

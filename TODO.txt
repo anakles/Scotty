@@ -3,7 +3,6 @@
 =======================================================================
 - Gewichtungsfunktion (Sensorwerte als Eingabe, danach Resampling)
 - Mechanismus zum "Straße-finden"
-- MonteCarlo Prozess separat anstoßen/ von sensor_0 trennen
 
 - Abbruchbedingung für das beste Partikel
 - "Besten" zeichnen
@@ -13,3 +12,8 @@
 - Scotty testen
 
 - Jan: Siegesbildschirm für erfolgreiche Lokalisation in Paint zeichnen
+
+=======================================================================
+								ToDo:
+=======================================================================
+[- MonteCarlo Prozess separat anstoßen/ von sensor_0 trennen]

@@ -34,6 +34,7 @@ public class MainFrame extends JFrame {
 	//No text for sensors or "end" command needed
 	private static JButton btn_sensors;
 	private static JButton btn_end;
+	private static JButton btn_startMonteCarlo;
 
 	public MainFrame() {
 		this.setTitle("LeJOS Server - D_GRUEN");
@@ -129,7 +130,30 @@ public class MainFrame extends JFrame {
 				ServerMain.sendCommandToClient(MonteCarloService.END, "0");
 				redrawCommands();
 			}
-		});		
+		});	
+		
+		btn_startMonteCarlo = new JButton("Start localisation");
+		btn_startMonteCarlo.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				ServerMain.sendCommandToClient(MonteCarloService.SENSORS, "0");
+				try {
+					//ServerMain.sendCommandToClient(MonteCarloService.END, "0");
+					ServerMain.runCommandsOnClient();
+				} catch (Exception e2) {
+					System.out.println("Couldn't run commands");
+				}
+				redrawCommands();
+				
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				ServerMain.startMonteCarlo();
+			}
+		});
 		
 		
 		//Adding controls to UI
@@ -152,6 +176,10 @@ public class MainFrame extends JFrame {
 		instructionPanel.add(new JLabel("Sensors "));
 		instructionPanel.add(new JLabel(""));
 		instructionPanel.add(btn_sensors);	
+		
+		instructionPanel.add(new JLabel("Monte Carlo"));
+		instructionPanel.add(new JLabel(""));
+		instructionPanel.add(btn_startMonteCarlo);	
 		
 		instructionPanel.add(new JLabel("Disconnect "));
 		instructionPanel.add(new JLabel(""));

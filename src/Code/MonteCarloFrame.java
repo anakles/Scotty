@@ -22,7 +22,6 @@ public class MonteCarloFrame extends JFrame {
 	ArrayList<MapLine> lines = new ArrayList<>();
 	ArrayList<Particle> particles = new ArrayList<>();
 	
-	
 	public MonteCarloFrame() {
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setVisible(true);
@@ -106,6 +105,7 @@ public class MonteCarloFrame extends JFrame {
 		
 		//Please choose a even number:
 		private int particleRadius = 4;
+		public Particle currentBest;
 		
 		public DrawPanel(){		}
 		
@@ -136,10 +136,10 @@ public class MonteCarloFrame extends JFrame {
 			//Draw Particles
 			for(Particle p : particles) {
 				if(p.weight > 0.8) {
-					g.setColor(Color.GREEN);
+					g.setColor(Color.ORANGE);
 				}
 				else if(p.weight > 0.5) {
-					g.setColor(Color.ORANGE);
+					g.setColor(Color.RED);
 				}
 				else {
 					g.setColor(Color.GRAY);
@@ -189,15 +189,44 @@ public class MonteCarloFrame extends JFrame {
 
 			}
 			
-			//Drawing a possible position
-			/*g.setColor(Color.GREEN);
-			g.drawOval(300 - (int)particleRadius/2, 75 - (int)particleRadius/2, particleRadius, particleRadius);
-			g.fillOval(300 - (int)particleRadius/2, 75 - (int)particleRadius/2, particleRadius, particleRadius);
-			int startX = 300;
-			int startY = 75;
-			int endX = startX + 10;
-			int endY = startY;
-			g.drawLine(startX, startY, endX, endY);*/
+			if(currentBest != null) {
+				//Drawing the current best particle
+				g.setColor(Color.GREEN);
+				g.drawOval(currentBest.x - (int)particleRadius/2, currentBest.y - (int)particleRadius/2, particleRadius, particleRadius);
+				g.fillOval(currentBest.x - (int)particleRadius/2, currentBest.y - (int)particleRadius/2, particleRadius, particleRadius);
+				
+				//draw orientation of particle:
+				int startX = currentBest.x;
+				int startY = currentBest.y;
+				int endX = 0;
+				int endY = 0;
+				
+				switch(currentBest.rotation) {
+					case 0:
+						endX = startX;
+						endY = startY - 10;
+						break;
+						
+					case 90:
+						endX = startX + 10;
+						endY = startY;
+						break;
+						
+					case 180:
+						endX = startX;
+						endY = startY + 10;
+						break;
+						
+					case 270:
+						endX = startX - 10;
+						endY = startY;
+						break;
+				}
+				
+				g.drawLine(startX, startY, endX, endY);
+				
+			}
+			
 		}
 		
 		public void setInnerSquare(int x1, int y1, int x2, int y2) {
