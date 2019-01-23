@@ -10,7 +10,7 @@ import Utils.*;
 
 public class MonteCarloService {	
 	
-	private static final int NUMBER_OF_PARTICLES = 100;
+	private static final int NUMBER_OF_PARTICLES = 20;
 	
 	public static final String FORWARD = "vor";
 	public static final String BACKWARD = "zurueck";
@@ -20,7 +20,7 @@ public class MonteCarloService {
 	public static final String GIVE_SENSORS = "sensor_0";
 	public static final String END = "end";
 	
-	public static final double STREET_COLOR_ID = 2.0;
+	public static final double STREET_COLOR_ID = 7.0;
 //	MonteCarloFrame monteCarloFrame = new MonteCarloFrame();
 	
 	double bestProb = 0;
@@ -192,8 +192,8 @@ public class MonteCarloService {
 		for(int i = 0; i < NUMBER_OF_PARTICLES; i++) {
 			int temp_x;
 			int temp_y;
-			double init_weight = 1 / NUMBER_OF_PARTICLES;
-			//double init_weight = Math.random();
+			//double init_weight = (1 / NUMBER_OF_PARTICLES);
+			double init_weight = 1;
 			
 			do {
 				temp_x = (int) (Math.random() * max_x);
@@ -225,41 +225,46 @@ public class MonteCarloService {
 	private ArrayList<Particle> calculateBelieve(ArrayList<Particle> old_particles) 
 	{
 		int N = old_particles.size();
-		ArrayList<Particle> new_particles = new ArrayList<Particle>();
-		double incr = 0;
-		bestProb = 0;
+        ArrayList<Particle> new_particles = new ArrayList<Particle>();
+        double beta = 0;
+        bestProb = 0;
+        double max = 0;
 
-		int index = 0;
+        for (Particle p : old_particles )
+        {
+            if (p.weight >= max)
+            {
+                max = p.weight;
+            }
+        }
 
-		for (int i = 0; i < N; i++) {
-			incr += old_particles.get(i).weight;
-		}
+        //int index = (int) (Math.random() * max);
+        int index = (int)Math.random() * N;
 
-		incr = incr / 2.0 / N;
-		double beta = incr;
-		
-		for (int i = 0; i < N; i++) 
-		{
-			while (beta > old_particles.get(i).weight) 
-			{
-				beta -= old_particles.get(i).weight;
-				index = (index + 1) % N;
-			}
+        for (int i = 0; i < N; i++) 
+        {
+            beta += Math.random() * 2 * max;
+            while (beta > old_particles.get(i).weight) 
+            {
+                beta -= old_particles.get(i).weight;
+                index = (index + 1) % N;
+            }
 
-			beta += incr;
-			//removed clone()
-			//new_particles.add((Particle) old_particles.get(i));
-			new_particles.add(new Particle(old_particles.get(i)));
-			
-			if (old_particles.get(i).weight > bestProb) 
-			{
-				bestProb = old_particles.get(i).weight;
-				MonteCarloFrame.panel.currentBest = old_particles.get(i);
-			}
 
-		}
-		
-		return new_particles;
+            //removed clone()
+            //new_particles.add((Particle) old_particles.get(i));
+            new_particles.add(new Particle(old_particles.get(i)));
+
+
+            if (old_particles.get(i).weight > bestProb) 
+            {
+                bestProb = old_particles.get(i).weight;
+                MonteCarloFrame.panel.currentBest = old_particles.get(i);
+            }
+
+        }
+
+        return new_particles;
 	}
 	
 	
@@ -269,12 +274,17 @@ public class MonteCarloService {
 	{
 		BotMove latestMove, lastNotNull = null;
 		SensorValue latestSensor;
-		
+		/*
+		System.out.println(">>>>>>>>>>>>>>> This are the new believes <<<<<<<<<<<<<<<<<");
+		for(Particle p : particles) {
+			System.out.println(p.toString());
+		}*/
+		/*
 		if(!isOnStreet(ServerMain.sensorHistory)) {
 			System.out.println("ERROR >>> The bot was placed off the road");
 			return;
 		}
-		onStreet = true;
+		onStreet = true;*/
 		
 		latestMove = ServerMain.moveHistory.get(ServerMain.moveHistory.size()-1);
 		latestSensor = ServerMain.sensorHistory.get(ServerMain.sensorHistory.size()-1);
@@ -316,6 +326,8 @@ public class MonteCarloService {
 			rotationTimes = (int) ( latestMove.getValue() / 90);		
 		}
 		
+		
+		System.out.println("> Searching the last forward move ...");
 		for(int i = ServerMain.moveHistory.size()-1; i > 0; i--) {
 			BotMove temp = ServerMain.moveHistory.get(i);
 			if(temp.getDirection().equals(FORWARD) && temp.getValue() > 0) {
@@ -324,13 +336,16 @@ public class MonteCarloService {
 			}
 		}
 		
+		System.out.println("> Iterating over all pixels...");
 		for (int i = 0; i < particles.size(); i++) 
 		{
 			Particle currParticle = particles.get(i);
-		
 			double prob = currParticle.weight;
+			
+			System.out.println("<"+i+"> Changing current particles rotation");
 			particles.get(i).changeRotation(rotationTimes); 
 			
+			System.out.println("<"+i+"> Changing current particles coordinates");
 			switch(currParticle.rotation) {
 				case 0:
 					break;
@@ -351,6 +366,7 @@ public class MonteCarloService {
 
 			
 			//check if particles are out of bounds
+			System.out.println("<"+i+"> Checking current particles location in bounds");
 			if (particles.get(i).x >= 580 || particles.get(i).x <= 10){
 				int temp_x;
 				int temp_y;				
@@ -370,69 +386,84 @@ public class MonteCarloService {
 				particles.set(i, p);
 			}
 
-			//Gewichtungsfunktion der Partikel
-			double diff = 0;
-
+			System.out.println("<"+i+"> Changing current particles believe");
+			ArrayList<SensorValue> lastValueList = new ArrayList<>();
+			lastValueList.add(ServerMain.sensorHistory.get(ServerMain.sensorHistory.size()-2));
+			lastValueList.add(ServerMain.sensorHistory.get(ServerMain.sensorHistory.size()-3));
 			
-			//Particle-Direction right; Looking left
-			if (latestSensor.getMesuredDirection().equals(SensorValue.DIR_LEFT) && particles.get(i).rotation == 90){
-				for (MapLine line : MonteCarloFrame.panel.lines){
-					if (particles.get(i).y >= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2){
-						diff = 1 - Math.abs(((particles.get(i).y - line.y1) - ( 100 * latestSensor.getSonicValue())));
-					}					
-				}
-			}
+			System.out.println(Arrays.toString(probs));
+			for(SensorValue s : lastValueList) {
+				System.out.println(">>>>>>>>>>>>>>>EVAL<<<<<<<<<<<<<<<<<");
+				System.out.println(s.toString());
 				
-			
-			//Particle-Direction right; Looking right
-			else if (latestSensor.getMesuredDirection().equals(SensorValue.DIR_RIGHT) && particles.get(i).rotation == 90){
-				for (MapLine line : MonteCarloFrame.panel.lines){
-					if (particles.get(i).y <= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2){
-						diff = 1 - Math.abs(((line.y1 - particles.get(i).y) - ( 100 * latestSensor.getSonicValue())));
-					}					
+				//Gewichtungsfunktion der Partikel
+				double diff = particles.get(i).weight;
+				
+				//Particle-Direction right; Looking left
+				if (s.getMesuredDirection().equals(SensorValue.DIR_LEFT) && particles.get(i).rotation == 90){
+					for (MapLine line : MonteCarloFrame.panel.lines){
+						if (particles.get(i).y >= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2){
+							diff = 1 - Math.abs(((particles.get(i).y - line.y1)/100 - (s.getSonicValue())));
+						}					
+					}
 				}
-			}
-			
-			
-			//Particle-Direction left; Looking left
-			else if (latestSensor.getMesuredDirection().equals(SensorValue.DIR_LEFT) && particles.get(i).rotation == 270){
-				for (MapLine line : MonteCarloFrame.panel.lines){
-					if (particles.get(i).y <= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2){
-						diff = 1 - Math.abs(((line.y1 - particles.get(i).y) - ( 100 * latestSensor.getSonicValue())));
-					}					
+				
+				//Particle-Direction right; Looking right
+				else if (s.getMesuredDirection().equals(SensorValue.DIR_RIGHT) && particles.get(i).rotation == 90){
+					for (MapLine line : MonteCarloFrame.panel.lines){
+						if (particles.get(i).y <= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2){
+							diff = 1 - Math.abs(((line.y1 - particles.get(i).y)/100 - (s.getSonicValue())));
+						}					
+					}
 				}
-			}
-			
-			
-			//Particle-Direction left; Looking right
-			else if (latestSensor.getMesuredDirection().equals(SensorValue.DIR_RIGHT) && particles.get(i).rotation == 270){
-				for (MapLine line : MonteCarloFrame.panel.lines){
-					if (particles.get(i).y >= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2)	{
-						diff = 1 - Math.abs(((particles.get(i).y - line.y1) - ( 100 * latestSensor.getSonicValue())));
-					}					
+				
+				//Particle-Direction left; Looking left
+				else if (s.getMesuredDirection().equals(SensorValue.DIR_LEFT) && particles.get(i).rotation == 270){
+					for (MapLine line : MonteCarloFrame.panel.lines){
+						if (particles.get(i).y <= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2){
+							diff = 1 - Math.abs(((line.y1 - particles.get(i).y)/100 - (s.getSonicValue())));
+						}					
+					}
 				}
-			}
 			
-			
-			prob = diff;
-
-			probs[i] = prob;
-		}
-
-		normalize(probs);
-
-		for (int i = 0; i < particles.size(); i++) {
-			Particle currParticle = particles.get(i);
-			currParticle.weight = probs[i];
-		}
+				//Particle-Direction left; Looking right
+				else if (s.getMesuredDirection().equals(SensorValue.DIR_RIGHT) && particles.get(i).rotation == 270){
+					for (MapLine line : MonteCarloFrame.panel.lines){
+						if (particles.get(i).y >= line.y1 && line.y1 == line.y2 && particles.get(i).x >= line.x1 && particles.get(i).x <= line.x2)	{
+							diff = 1 - Math.abs(((particles.get(i).y - line.y1)/100 - (s.getSonicValue())));
+						}					
+					}
+				}
 	
-		particles = calculateBelieve(particles);
-		for(Particle p : particles)
-			System.out.println(p.toString());
+				probs[i] = diff;
+				
+			}
+		}	
 		
+		System.out.println("> Normalizing the particles");
+		normalize(probs);
+		System.out.println(Arrays.toString(probs));
+		
+		System.out.println("> Calculating the new believes");
+		particles = calculateBelieve(particles);
+		
+		System.out.println("> Updating all particles believe");
+		for (int i = 0; i < particles.size(); i++) {
+			Particle currPart = particles.get(i);
+			if(probs[i] != 0.0)
+				currPart.weight = probs[i];
+		}	
+		
+		System.out.println("> Repainting all particles");
 		MonteCarloFrame.panel.particles = particles;
 		MonteCarloFrame.panel.repaint(); //TODO: test, if this repaint()-method is the right one
 		MonteCarloFrame.panel.revalidate();
+		
+		System.out.println(">>>>>>>>>>>>>>> This are the new believes <<<<<<<<<<<<<<<<<");
+		for(Particle p : particles) {
+			System.out.println(p.toString());
+		}
+				
 }
 
 
@@ -443,20 +474,26 @@ public class MonteCarloService {
 		for (int i = 0; i < doubles.length; i++) {
 			sum += doubles[i];
 		}
+		
 		normalize(doubles, sum);
+		
 	}
 	
 	public final static void normalize(double[] doubles, double sum) {
 
-		if (Double.isNaN(sum)) {
+		try {
+			if (Double.isNaN(sum)) {
 			throw new IllegalArgumentException("Can't normalize array. Sum is NaN.");
-		}
-		if (sum != 0) {
-			for (int i = 0; i < doubles.length; i++) {
-				doubles[i] /= sum;
+			}
+			if (sum != 0) {
+				for (int i = 0; i < doubles.length; i++) {
+					doubles[i] /= sum;
+				}
 			}
 		}
-
+		catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
 	}
-
 }

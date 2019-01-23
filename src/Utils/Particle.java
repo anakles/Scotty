@@ -5,7 +5,7 @@ public class Particle {
 	public int x;
 	public int y;
 	
-	//ToDo: Add rotation (0°, 90°, 180° or 270°)
+	//Add rotation (0°, 90°, 180° or 270°)
 	public int rotation = 0;
 	
 	
@@ -26,7 +26,6 @@ public class Particle {
 		
 		this.weight = part.weight;
 		this.rotation = part.rotation;
-		
 	}
 	
 	
