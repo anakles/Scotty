@@ -93,6 +93,32 @@ public class MonteCarloService {
 			commands.add(ROTATE_RIGHT+"_"+"168");
 			commands.add(GIVE_SENSORS);
 			
+			for(Particle p : particles) {
+				p.changeRotation(2);
+			}
+			
+			ServerMain.monteCarloFrame.repaintThis();
+			
+			for(Particle p : particles) {
+					switch(p.rotation) {
+					case 0:
+						break;
+						
+					case 90:
+						p.x += 5;
+						break;
+						
+					case 180:
+						break;
+						
+					case 270:
+						p.x -= 5;
+						break;
+					}
+			}
+			
+			onStreet = true;
+			
 		}
 		//Case: Scotty the schrotty botty did not drive straight
 		else {
@@ -106,7 +132,7 @@ public class MonteCarloService {
 			 */
 			
 			
-			commands.add(ROTATE_LEFT+"_"+(5*multiplier));
+			commands.add(ROTATE_LEFT+"_"+(7*multiplier));
 			commands.add(FORWARD+"_"+100);
 			commands.add(GIVE_SENSORS);
 				
@@ -143,7 +169,7 @@ public class MonteCarloService {
 //				return;
 //			}
 //			
-			commands.add(ROTATE_RIGHT+"_"+(10*multiplier));
+			commands.add(ROTATE_RIGHT+"_"+(14*multiplier));
 			commands.add(FORWARD+"_"+100);
 			commands.add(GIVE_SENSORS);
 				
@@ -163,7 +189,7 @@ public class MonteCarloService {
 			}
 				
 			commands.add(BACKWARD+"_"+120);
-			commands.add(ROTATE_LEFT+"_"+(5*multiplier));
+			commands.add(ROTATE_LEFT+"_"+(7*multiplier));
 
 			
 		}
@@ -171,6 +197,24 @@ public class MonteCarloService {
 		try {
 			ServerMain.runCommandsOnClient();
 			Thread.sleep(500);
+			for(Particle p : particles) {
+				switch(p.rotation) {
+				case 0:
+					break;
+					
+				case 90:
+					p.x += 10;
+					break;
+					
+				case 180:
+					break;
+					
+				case 270:
+					p.x -= 10;
+					break;
+			}
+
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			return;
@@ -337,7 +381,10 @@ public class MonteCarloService {
 				findStreetCommands();
 				multiplier++;
 			}
+		
 		}
+		
+		
 			
 		
 		//times 90° rotation
@@ -367,7 +414,7 @@ public class MonteCarloService {
 			double prob = currParticle.weight;
 			
 //			System.out.println("<"+i+"> Changing current particles rotation");
-			particles.get(i).changeRotation(rotationTimes); 
+//			particles.get(i).changeRotation(rotationTimes); 
 			
 //			System.out.println("<"+i+"> Changing current particles coordinates");
 			switch(currParticle.rotation) {

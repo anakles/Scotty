@@ -155,10 +155,10 @@ public class MonteCarloFrame extends JFrame {
 			for(Particle p : particles) {
 				
 			
-				if(p.weight > 0.5) {
+				if(p.weight > 0.03) {
 					g.setColor(Color.ORANGE);
 				}
-				else if(p.weight > 0.2) {
+				else if(p.weight > 0.01) {
 					g.setColor(Color.RED);
 				}
 				else {

@@ -23,7 +23,7 @@ public class ServerMain {
 	
 	private static MainFrame mainFrame;
 	private static MonteCarloService monteCarloService;
-	private static MonteCarloFrame monteCarloFrame;
+	public static MonteCarloFrame monteCarloFrame;
 	private static boolean serverIsRunning = false;
 	
 	public static ServerSocket serverSocket = null;
@@ -169,25 +169,28 @@ public class ServerMain {
 			e.printStackTrace();
 		}
 		
-		monteCarloService.addCommand(MonteCarloService.FORWARD+"_"+100);
-		monteCarloService.addCommand(MonteCarloService.GIVE_SENSORS);
 			
-		try{
-			runCommandsOnClient();
-		}
-		catch (Exception e) {
-			//e.printStackTrace();
-			System.out.println(">>> ERROR: Could not send commands to client");
-		}
-			
-		if(monteCarloFrame.panel.currentBest.weight < THRESHOLD)
+		if(monteCarloFrame.panel.currentBest.weight < THRESHOLD) {
+			monteCarloService.addCommand(MonteCarloService.FORWARD+"_"+100);
+			monteCarloService.addCommand(MonteCarloService.GIVE_SENSORS);
+				
+			try{
+				runCommandsOnClient();
+			}
+			catch (Exception e) {
+				//e.printStackTrace();
+				System.out.println(">>> ERROR: Could not send commands to client");
+			}
 			startMonteCarlo();
+		}
 		else {
 			System.out.println(">>>> ~~~~~~~ <<<<");
 			System.out.println(">>>> VICTORY <<<<");
 			System.out.println(">>>> ~~~~~~~ <<<<");
 			monteCarloFrame.repaintThis();
-		}		
+		}	
+		
+		
 	}
 	
 	public static void runCommandsOnClient() throws IOException{
