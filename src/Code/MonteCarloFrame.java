@@ -131,10 +131,20 @@ public class MonteCarloFrame extends JFrame {
 			
 			
 			
-			
+			double max = 0;
+			for (Particle e : particles)
+			{
+	            if (e.weight >= max)
+	            {
+	                max = e.weight;
+	                currentBest = e;
+	            }
+			}
 			
 			//Draw Particles
 			for(Particle p : particles) {
+				
+			
 				if(p.weight > 0.8) {
 					g.setColor(Color.ORANGE);
 				}
