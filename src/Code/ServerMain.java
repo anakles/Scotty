@@ -6,15 +6,20 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import Utils.*;
+
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 public class ServerMain {
+	
+	private static final double THRESHOLD = 0.05;
 	
 	private static MainFrame mainFrame;
 	private static MonteCarloService monteCarloService;
@@ -25,8 +30,7 @@ public class ServerMain {
 	public static Socket clientSocket = null;
 	
 	public static ArrayList<BotMove> moveHistory = new ArrayList<>();
-	public static ArrayList<SensorValue> sensorHistory = new ArrayList<>();
-	
+	public static ArrayList<SensorValue> sensorHistory = new ArrayList<>();	
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -36,7 +40,6 @@ public class ServerMain {
 		try {
 			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
 		} catch (Exception e) {
-//			e.printStackTrace();
 			System.out.println("ERROR @ Loading Look and Feel");
 		}
 		
@@ -143,11 +146,48 @@ public class ServerMain {
 	}
 	
 	public static void startMonteCarlo() {
-		//TODO: Replace function calls
-		monteCarloService.monteCarlo();
+		Runnable r = new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				System.out.println("============================================================");
+				
+				monteCarloService.monteCarlo();			
+			    
+			}
+		};
 		
-		monteCarloFrame.panel.repaint();
-		monteCarloFrame.panel.revalidate();
+		Thread t = new Thread(r);
+		t.start();
+		
+		
+		try {
+			t.join();
+			monteCarloFrame.repaintThis();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		monteCarloService.addCommand(MonteCarloService.FORWARD+"_"+100);
+		monteCarloService.addCommand(MonteCarloService.GIVE_SENSORS);
+			
+		try{
+			runCommandsOnClient();
+		}
+		catch (Exception e) {
+			//e.printStackTrace();
+			System.out.println(">>> ERROR: Could not send commands to client");
+		}
+			
+		if(monteCarloFrame.panel.currentBest.weight < THRESHOLD)
+			startMonteCarlo();
+		else {
+			System.out.println(">>>> ~~~~~~~ <<<<");
+			System.out.println(">>>> VICTORY <<<<");
+			System.out.println(">>>> ~~~~~~~ <<<<");
+			monteCarloFrame.repaintThis();
+		}		
 	}
 	
 	public static void runCommandsOnClient() throws IOException{

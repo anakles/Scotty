@@ -2,15 +2,12 @@ package Code;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.awt.Graphics;
-import java.io.IOException;
 
 import Utils.*;
 
 public class MonteCarloService {	
 	
-	private static final int NUMBER_OF_PARTICLES = 50;
+	private static final int NUMBER_OF_PARTICLES = 100;
 	
 	public static final String FORWARD = "vor";
 	public static final String BACKWARD = "zurueck";
@@ -20,7 +17,8 @@ public class MonteCarloService {
 	public static final String GIVE_SENSORS = "sensor_0";
 	public static final String END = "end";
 	
-	public static final double STREET_COLOR_ID = 2.0;
+	public static final double STREET_COLOR_ID = 7.0;
+	private static int multiplier = 1;
 //	MonteCarloFrame monteCarloFrame = new MonteCarloFrame();
 	
 	double bestProb = 0;
@@ -58,24 +56,41 @@ public class MonteCarloService {
 			return false;
 	}
 	
+	public BotMove getLastForwardMove() {
+		for(int i = ServerMain.moveHistory.size()-1; i > 0; i--) {
+			BotMove temp = ServerMain.moveHistory.get(i);
+			if(temp.getDirection().equals(FORWARD) && temp.getValue() > 0.0) {
+				return temp;
+			}
+		}
+		return null;
+	}
+	
+	public SensorValue getLastFrontMeasure() {
+		//Filter
+		for(int i = ServerMain.sensorHistory.size()-1; i > 0; i--) {
+			if(ServerMain.sensorHistory.get(i).getMesuredDirection().equals(SensorValue.DIR_FRONT)) {
+				return ServerMain.sensorHistory.get(i);
+			}	
+		}	
+		
+		return null;		
+	}
+	
 	public void findStreetCommands() throws NullPointerException{
 		BotMove lastMove = ServerMain.moveHistory.get(ServerMain.moveHistory.size()-1);
 		BotMove lastForwardMove = null;
 		SensorValue lastFront = null;
 		
-		//Filter
-		for(int i = ServerMain.sensorHistory.size()-1; i > 0; i--) {
-			if(ServerMain.sensorHistory.get(i).getMesuredDirection().equals(SensorValue.DIR_FRONT)) {
-				lastFront = ServerMain.sensorHistory.get(i);
-				break;
-			}	
-		}
+		lastFront = getLastFrontMeasure();
+		lastForwardMove = getLastForwardMove();
 		
 		//Case: We reached the end of the street
-		if(lastFront.getSonicValue() < 0.4) {
+		if(lastFront.getSonicValue() < 0.2) {
+			System.out.println("Scotty stands in front of a wall");
 			commands.clear();
-			commands.add(BACKWARD+"_"+lastMove.getValue());
-			commands.add(ROTATE_RIGHT+"_"+"180");
+			commands.add(BACKWARD+"_"+(lastForwardMove.getValue()+50));
+			commands.add(ROTATE_RIGHT+"_"+"168");
 			commands.add(GIVE_SENSORS);
 			
 		}
@@ -89,35 +104,9 @@ public class MonteCarloService {
 			 * sensors
 			 * if still not on street, ERROR?!
 			 */
-			//SensorValue tempSensor = ServerMain.sensorHistory.get(ServerMain.sensorHistory.size()-1);
-			
-			//redo last forward move:
-			if(lastMove.getDirection().equals(FORWARD)) {
-				lastForwardMove = lastMove;
-				addCommand(BACKWARD+"_"+lastMove.getValue());
-			}
-			else {
-				for(int i = ServerMain.moveHistory.size()-1; i > 0; i--) {
-					if(ServerMain.moveHistory.get(i).getDirection().equals(FORWARD)) {
-						lastForwardMove = ServerMain.moveHistory.get(i);
-						addCommand(BACKWARD+"_"+lastForwardMove.getValue());
-						break;
-					}
-				}
-			}
-			//addCommand(GIVE_SENSORS);
 			
 			
-			try {
-				ServerMain.runCommandsOnClient();
-				Thread.sleep(500);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				return;
-			}
-	
-			commands.add(ROTATE_RIGHT+"_"+(10));
+			commands.add(ROTATE_LEFT+"_"+(5*multiplier));
 			commands.add(FORWARD+"_"+100);
 			commands.add(GIVE_SENSORS);
 				
@@ -136,8 +125,25 @@ public class MonteCarloService {
 				return;
 			}
 				
-			commands.add(BACKWARD+"_"+100);
-			commands.add(ROTATE_LEFT+"_"+(20));
+			commands.add(BACKWARD+"_"+120);
+//			commands.add(GIVE_SENSORS);
+//			
+//			try {
+//				ServerMain.runCommandsOnClient();
+//				Thread.sleep(500);
+//			} catch (Exception e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//				return;
+//			}
+				
+//			if(isOnStreet(ServerMain.sensorHistory)) {
+//				System.out.println("Scotty found the street again \\(*o*)/");
+//				onStreet = true;
+//				return;
+//			}
+//			
+			commands.add(ROTATE_RIGHT+"_"+(10*multiplier));
 			commands.add(FORWARD+"_"+100);
 			commands.add(GIVE_SENSORS);
 				
@@ -156,19 +162,27 @@ public class MonteCarloService {
 				return;
 			}
 				
-			commands.add(BACKWARD+"_"+100);
-			commands.add(ROTATE_RIGHT+"_"+(10));
+			commands.add(BACKWARD+"_"+120);
+			commands.add(ROTATE_LEFT+"_"+(5*multiplier));
 
-			try {
-				ServerMain.runCommandsOnClient();
-				Thread.sleep(500);
-			} catch (Exception e) {
-				e.printStackTrace();
-				return;
-			}
 			
+		}
+		
+		try {
+			ServerMain.runCommandsOnClient();
+			Thread.sleep(500);
+		} catch (Exception e) {
+			e.printStackTrace();
 			return;
 		}
+		
+		if(isOnStreet(ServerMain.sensorHistory)) {
+			System.out.println("Scotty found the street again \\(*o*)/");
+			onStreet = true;
+			return;
+		}
+		
+		return;
 	}
 	
 	public void addCommand(String cmd) {
@@ -277,11 +291,7 @@ public class MonteCarloService {
 	{
 		BotMove latestMove, lastNotNull = null;
 		SensorValue latestSensor;
-		/*
-		System.out.println(">>>>>>>>>>>>>>> This are the new believes <<<<<<<<<<<<<<<<<");
-		for(Particle p : particles) {
-			System.out.println(p.toString());
-		}*/
+		
 		/*
 		if(!isOnStreet(ServerMain.sensorHistory)) {
 			System.out.println("ERROR >>> The bot was placed off the road");
@@ -309,13 +319,23 @@ public class MonteCarloService {
 		//Are we still on the street?
 		if(!isOnStreet(ServerMain.sensorHistory)) {	
 			onStreet = false;
+			multiplier = 1;
 			
 			while(!onStreet) {
-				System.out.println("~~~~~   ? ~~~~~");
-				System.out.println("~~~~~ O=O ~~~~~");
-				System.out.println("~~~~~ [ ] ~~~~~");
-				System.out.println("~~~~~ . . ~~~~~");
+				System.out.println("~~~~~~~~~~~~~~~~~~~");
+				System.out.println("~WHERE THE F AM I?~");
+				System.out.println("~~~~~~~   ? ~~~~~~~");
+				System.out.println("~~~~~~~ O=O ~~~~~~~");
+				System.out.println("~~~~~~~ [ ] ~~~~~~~");
+				System.out.println("~~~~~~~ . . ~~~~~~~");
+				System.out.println("~~~~~~~~~~~~~~~~~~~\n");
+				try {
+					Thread.sleep(500);
+				} catch (Exception e) {
+					return;
+				}
 				findStreetCommands();
+				multiplier++;
 			}
 		}
 			
@@ -455,7 +475,11 @@ public class MonteCarloService {
 					}
 				}
 	
-
+				//LVL-Up the best particles, to create a bigger difference for the resempling wheel
+                if (diff >= 160 && diff <= 200)
+                {
+                    diff += 400;
+                }
 				
 				probs[i] = diff;
 				System.out.println(i + " aktuelle Prob: " + diff);
@@ -467,9 +491,6 @@ public class MonteCarloService {
 		normalize(probs);
 		System.out.println(Arrays.toString(probs));
 		
-		System.out.println("> Calculating the new believes");
-		particles = calculateBelieve(particles);
-		
 		System.out.println("> Updating all particles believe");
 		for (int i = 0; i < particles.size(); i++) {
 			Particle currPart = particles.get(i);
@@ -477,10 +498,32 @@ public class MonteCarloService {
 				currPart.weight = probs[i];
 		}	
 		
+		System.out.println("> Calculating the new believes");
+		particles = calculateBelieve(particles);
+		
+		
+		
 		System.out.println("> Repainting all particles");
 		MonteCarloFrame.panel.particles = particles;
-		MonteCarloFrame.panel.repaint(); //TODO: test, if this repaint()-method is the right one
+		MonteCarloFrame.panel.repaint();
 		MonteCarloFrame.panel.revalidate();
+		/*
+		try {
+			SwingUtilities.invokeAndWait(new Runnable() {
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+					 MonteCarloFrame.repaintThis();
+				}
+			});
+		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
+		
 		
 		System.out.println(">>>>>>>>>>>>>>> This are the new believes <<<<<<<<<<<<<<<<<");
 		for(Particle p : particles) {

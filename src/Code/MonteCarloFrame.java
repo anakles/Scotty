@@ -3,12 +3,14 @@ package Code;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import Utils.*;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -96,6 +98,14 @@ public class MonteCarloFrame extends JFrame {
 		
 	}
 	
+	public void repaintThis() {
+		repaint();
+		revalidate();
+		update(getGraphics());
+		panel.repaint();
+		panel.revalidate();
+	}
+	
 	
 	public class DrawPanel extends JPanel{
 		public ArrayList<MapLine> lines;
@@ -145,10 +155,10 @@ public class MonteCarloFrame extends JFrame {
 			for(Particle p : particles) {
 				
 			
-				if(p.weight > 0.8) {
+				if(p.weight > 0.5) {
 					g.setColor(Color.ORANGE);
 				}
-				else if(p.weight > 0.5) {
+				else if(p.weight > 0.2) {
 					g.setColor(Color.RED);
 				}
 				else {
@@ -290,5 +300,7 @@ public class MonteCarloFrame extends JFrame {
 		panel.setInnerSquare(x1+10, y1+20, x2-20, y2-20);
 	
 }
+	
+	
 
 }

@@ -144,13 +144,7 @@ public class MainFrame extends JFrame {
 					System.out.println("Couldn't run commands");
 				}
 				redrawCommands();
-				
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
+		        
 				ServerMain.startMonteCarlo();
 			}
 		});
